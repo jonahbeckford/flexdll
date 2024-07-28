@@ -31,6 +31,8 @@ typedef unsigned long uintnat;
 #define RELOC_REL32_4   0x0003
 #define RELOC_REL32_1   0x0004
 #define RELOC_REL32_2   0x0005
+#define RELOC_REL32_5   0x0006
+#define RELOC_32NB      0x0007
 #define RELOC_DONE      0x0100
 
 typedef struct { UINT_PTR kind; char *name; UINT_PTR *addr; } reloc_entry;
@@ -350,6 +352,25 @@ static void relocate(resolver f, void *data, reloctbl *tbl, err_t *err) {
       s += *((INT32*) ptr -> addr);
       if (s != (INT32) s) {
         sprintf(err->message, "flexdll error: cannot relocate RELOC_REL32_2, target is too far: %p  %p",(void *)((UINT_PTR) s), (void *) ((UINT_PTR)(INT32) s));
+        err->code = 3;
+        goto restore;
+      }
+      *((UINT32*) ptr->addr) = s;
+      break;
+    case RELOC_REL32_5:
+      s -= (INT_PTR)(ptr -> addr) + 9;
+      s += *((INT32*) ptr -> addr);
+      if (s != (INT32) s) {
+        sprintf(err->message, "flexdll error: cannot relocate RELOC_REL32_5, target is too far: %p  %p",(void *)((UINT_PTR) s), (void *) ((UINT_PTR)(INT32) s));
+        err->code = 3;
+        goto restore;
+      }
+      *((UINT32*) ptr->addr) = s;
+      break;
+    case RELOC_32NB:
+      s += *((INT32*) ptr -> addr);
+      if (s != (INT32) s) {
+        sprintf(err->message, "flexdll error: cannot relocate %s RELOC_32NB, target is too far: %p  %p", ptr->name, (void *)((UINT_PTR) s), (void *) ((UINT_PTR)(INT32) s));
         err->code = 3;
         goto restore;
       }
