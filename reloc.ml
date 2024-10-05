@@ -374,11 +374,11 @@ let drop_underscore obj s =
   | `x86 ->
       assert (s <> "");
       begin
-        match s.[0] with
+        match s.[0], s with
         (* https://learn.microsoft.com/en-us/cpp/build/reference/decorated-names?view=msvc-170#FormatC *)
-        | '_' -> String.sub s 1 (String.length s - 1)
-        | '?' -> s
-        | '@' -> s
+        | '_', _ -> String.sub s 1 (String.length s - 1)
+        | '?', _ -> s
+        | _, "@__security_check_cookie@4" -> "__security_check_cookie"
         | _ -> failwith (Printf.sprintf "In %s, symbol %s doesn't start with _, ?, or @" obj.obj_name s)
       end
   | `x64 ->
