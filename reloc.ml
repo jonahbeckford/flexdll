@@ -1108,9 +1108,34 @@ let build_dll link_exe output_file files exts extra_args =
           else
             temp_file "dyndll_implib" ".lib"
         in
-        (* VS 2017.3 doesn't seem to be able to cope with /implib: existing but
-           being an empty file. *)
+        (* @original
+           VS 2017.3 doesn't seem to be able to cope with /implib: existing but
+           being an empty file.
+
+           @2025-02-04
+           VS 2022 17.11.4 on windows_x86 causes the following which seems like
+           CloseHandle() on Windows is not actually synchronous ... so a race
+           condition?
+
+            ocamlopt -I +compiler-libs -g -a -o findlib.cmxa findlib_config.cmx fl_split.cmx fl_metatoken.cmx fl_meta.cmx fl_metascanner.cmx fl_topo.cmx fl_package_base.cmx findlib.cmx fl_args.cmx fl_lint.cmx
+            if [ 1 -gt 0 ]; then \
+                ocamlopt -I +compiler-libs -g -shared -o findlib.cmxs findlib_config.cmx fl_split.cmx fl_metatoken.cmx fl_meta.cmx fl_metascanner.cmx fl_topo.cmx fl_package_base.cmx findlib.cmx fl_args.cmx fl_lint.cmx; \
+            fi
+              Creating library .\dyndll_implib936995.lib and object .\dyndll_implib936995.exp
+            LINK : fatal error LNK1114: cannot overwrite the original file '.\dyndll_implib936995.lib'; error code 2
+            ** Fatal error: Error during linking
+            File "caml_startup", line 1:
+            Error: Error during linking (exit code 2)
+            make[1]: *** [Makefile:71: findlib.cmxa] Error 2
+            make[1]: Leaving directory '/c/o32/d/b-r/150-ocamlfind/DkSDKFiles/fb/src/findlib'
+            make: *** [Makefile:18: opt] Error 2
+            The MSYS2 command failed with error level 2.
+            The MSYS2 command was: C:/o32/d/b-r/150-ocamlfind/run-make.sh *)
         let c = open_out implib in output_string c "x"; close_out c;
+        (match !machine, Sys.getenv_opt "FLEXDLL_CLOSE_IMPLIB_DELAY_SECS" with
+          | `x86, Some secs_s when secs_s <> "" ->
+            (match Float.of_string_opt secs_s with Some secs -> Unix.sleepf secs | _ -> ())
+          | _ -> ());
         let _impexp = add_temp (Filename.chop_suffix implib ".lib" ^ ".exp") in
         let extra_args =
           if !custom_crt then "/nodefaultlib:LIBCMT /nodefaultlib:MSVCRT " ^ extra_args
