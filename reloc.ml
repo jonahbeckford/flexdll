@@ -379,6 +379,7 @@ let drop_underscore obj s =
         | '_', _ -> String.sub s 1 (String.length s - 1)
         | '?', _ -> s
         | _, "@__security_check_cookie@4" -> "__security_check_cookie"
+        | _, "@_RTC_CheckStackVars@8" -> "_RTC_CheckStackVars"
         | _ -> failwith (Printf.sprintf "In %s, symbol %s doesn't start with _, ?, or @" obj.obj_name s)
       end
   | `x64 ->
